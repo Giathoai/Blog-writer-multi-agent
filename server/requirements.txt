@@ -1,0 +1,27 @@
+# FastAPI
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pydantic
+
+# LangChain core
+langchain
+langchain-core
+langchain-community
+
+# LLM Providers
+langchain-huggingface
+langchain-google-genai
+google-generativeai
+
+# Web Search
+google-search-results
+
+# Document Processing
+pypdf
+python-docx
+chardet
+
+# Utilities
+aiofiles
