@@ -8,11 +8,10 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 from app.llm_config import get_llm
-from app.tasks import PLANNER_PROMPT, WRITER_PROMPT, EDITOR_PROMPT
-
+from app.tasks import PLANNER_PROMPT, WRITER_PROMPT, EDITOR_PROMPT, ANALYZER_PROMPT
 
 def get_search_tool():
     """
@@ -52,6 +51,11 @@ def search_web(query: str) -> str:
     except Exception as e:
         return f"(Web search failed: {str(e)})"
 
+def build_analyzer_chain():
+    """Build the prompt analyzer and router agent chain."""
+    llm = get_llm()
+    # Sử dụng JsonOutputParser để bắt LLM trả về dict python
+    return ANALYZER_PROMPT | llm | JsonOutputParser()
 
 def build_planner_chain():
     """Build the Content Planner agent chain."""

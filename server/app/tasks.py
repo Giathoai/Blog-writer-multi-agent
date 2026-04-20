@@ -1,10 +1,31 @@
-"""
-Prompt Templates for Blog Writer Agents
-Each agent has a system prompt and a task prompt template.
-"""
-
 from langchain_core.prompts import ChatPromptTemplate
 
+# ============================================================
+# ANALYZER AGENT PROMPTS
+# ============================================================
+
+ANALYZER_SYSTEM = """You are an expert Prompt Analyzer and Research Router.
+Your task is to analyze the user's request and the provided document content (if any) to determine:
+1. The actual core topic of the blog post (ignoring noisy instructional words like "please write a blog about this file").
+2. Whether an external web search is needed. If the document already provides enough context to write the post, OR if the content is theoretical/fictional and doesn't need real-world updates, skip the web search. If the document is empty, lacks sufficient information, or the user explicitly asks for the latest news, require a web search.
+
+YOU MUST RETURN ONLY A VALID JSON STRING IN THE EXACT FORMAT BELOW, WITHOUT ANY ADDITIONAL TEXT:
+{
+    "refined_topic": "Specific, clear topic extracted from the prompt and document",
+    "needs_search": true or false,
+    "search_query": "Optimized Google search query (if needs_search is true, otherwise leave empty '')"
+}"""
+
+ANALYZER_TASK = """User Request: {topic}
+
+Attached Document Content:
+{document_context}
+"""
+
+ANALYZER_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", ANALYZER_SYSTEM),
+    ("human", ANALYZER_TASK),
+])
 
 # ============================================================
 # PLANNER AGENT PROMPTS

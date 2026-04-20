@@ -25,3 +25,8 @@ chardet
 
 # Utilities
 aiofiles
+
+# --- RAG-Anything Ecosystem ---
+raganything
+lightrag-hku
+pymilvus[lite]>=2.3.0

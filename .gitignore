@@ -28,7 +28,7 @@ build/
 
 # Uploads
 server/uploads/
-
+venv/
 # Misc
 *.log
 .agent/
