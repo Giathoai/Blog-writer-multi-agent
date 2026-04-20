@@ -9,7 +9,7 @@ Endpoints:
 """
 
 from __future__ import annotations
-
+import uuid 
 import os
 import logging
 from typing import Any, Dict, List, Optional
@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from app.crew import BlogWriterCrew
 from app.document_handler import process_uploaded_files
 from app.llm_config import get_llm_info
-
+SESSIONS_STORE = {}
 # Load environment
 load_dotenv()
 
@@ -34,7 +34,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+class UserComment(BaseModel):
+    selected_text: str
+    comment: str
 
+class ReviseRequest(BaseModel):
+    comments: List[UserComment]
 # --- Lifespan (startup/shutdown) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -150,7 +155,16 @@ async def generate_blog(
             document_text=document_text,
         )
 
+        # Tạo Session ID và lưu lại trạng thái bài blog
+        session_id = str(uuid.uuid4())
+        SESSIONS_STORE[session_id] = {
+            "topic": result["topic"],
+            "blog_content": result["final"],
+            "history": [{"role": "system", "action": "created"}]
+        }
+
         return {
+            "session_id": session_id, # Trả về Session ID để UI dùng cho các api sau
             "topic": result["topic"],
             "blog": {
                 "raw": result["final"],
@@ -159,6 +173,7 @@ async def generate_blog(
             },
             "steps": result["steps"],
         }
+    
 
     except RuntimeError as e:
         logger.error(f"Blog generation failed: {e}")
@@ -196,4 +211,47 @@ async def generate_blog_json(request: TopicRequest):
 
     except Exception as e:
         logger.error(f"Blog generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/revise-blog/{session_id}")
+async def revise_blog(session_id: str, request: ReviseRequest):
+    """
+    Endpoint nhận feedback từ người dùng trên các đoạn văn bản cụ thể.
+    """
+    if app.state.crew is None:
+        raise HTTPException(status_code=503, detail="Crew not initialized.")
+
+    if session_id not in SESSIONS_STORE:
+        raise HTTPException(status_code=404, detail="Session không tồn tại hoặc đã hết hạn.")
+
+    session_data = SESSIONS_STORE[session_id]
+    current_blog = session_data["blog_content"]
+
+    try:
+        logger.info(f"Revising blog for session: {session_id} with {len(request.comments)} comments.")
+        
+        # Gọi hàm revise trong crew
+        comments_dict_list = [c.dict() for c in request.comments]
+        revised_blog = app.state.crew.revise(current_blog, comments_dict_list)
+
+        # Cập nhật lại kho lưu trữ với bản mới nhất
+        SESSIONS_STORE[session_id]["blog_content"] = revised_blog
+        SESSIONS_STORE[session_id]["history"].append({
+            "role": "user",
+            "comments": comments_dict_list
+        })
+        SESSIONS_STORE[session_id]["history"].append({
+            "role": "system",
+            "action": "revised"
+        })
+
+        return {
+            "session_id": session_id,
+            "blog": {
+                "raw": revised_blog
+            },
+            "message": "Đã cập nhật bài blog dựa trên nhận xét của bạn."
+        }
+
+    except Exception as e:
+        logger.error(f"Blog revision failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,32 @@
+# tasks.py
+
 from langchain_core.prompts import ChatPromptTemplate
+
+REVISER_SYSTEM = """Bạn là một Biên tập viên cấp cao (Senior Editor).
+Nhiệm vụ của bạn là chỉnh sửa một bài blog dựa trên các nhận xét (comments) của người dùng cho những đoạn văn cụ thể.
+
+Nguyên tắc bắt buộc:
+1. Chỉ chỉnh sửa những phần được người dùng yêu cầu.
+2. Giữ nguyên hoàn toàn nội dung, cấu trúc và giọng văn của các đoạn KHÔNG bị comment.
+3. Đảm bảo luồng văn bản sau khi sửa vẫn liền mạch, tự nhiên.
+4. Luôn trả về toàn bộ bài blog đã được chỉnh sửa trong định dạng Markdown chuẩn."""
+
+REVISER_TASK = """Dưới đây là BÀI BLOG HIỆN TẠI:
+---
+{current_blog}
+---
+
+Dưới đây là DANH SÁCH NHẬN XÉT (COMMENTS) của người dùng:
+{user_comments}
+
+Hãy phân tích vị trí các đoạn văn bản được bôi đen, áp dụng các nhận xét tương ứng để viết lại bài blog.
+Chỉ xuất ra nội dung bài blog cuối cùng, không kèm giải thích."""
+
+REVISER_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", REVISER_SYSTEM),
+    ("human", REVISER_TASK),
+])
+
 
 # ============================================================
 # ANALYZER AGENT PROMPTS
@@ -10,11 +38,11 @@ Your task is to analyze the user's request and the provided document content (if
 2. Whether an external web search is needed. If the document already provides enough context to write the post, OR if the content is theoretical/fictional and doesn't need real-world updates, skip the web search. If the document is empty, lacks sufficient information, or the user explicitly asks for the latest news, require a web search.
 
 YOU MUST RETURN ONLY A VALID JSON STRING IN THE EXACT FORMAT BELOW, WITHOUT ANY ADDITIONAL TEXT:
-{
+{{
     "refined_topic": "Specific, clear topic extracted from the prompt and document",
     "needs_search": true or false,
     "search_query": "Optimized Google search query (if needs_search is true, otherwise leave empty '')"
-}"""
+}}"""
 
 ANALYZER_TASK = """User Request: {topic}
 
@@ -26,7 +54,6 @@ ANALYZER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", ANALYZER_SYSTEM),
     ("human", ANALYZER_TASK),
 ])
-
 # ============================================================
 # PLANNER AGENT PROMPTS
 # ============================================================

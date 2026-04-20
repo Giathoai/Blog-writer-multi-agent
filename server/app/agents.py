@@ -1,6 +1,6 @@
 """
 Agent Definitions and Web Search Tool
-Defines the 3 agents (Planner, Writer, Editor) and the search tool.
+Defines the 5 agents (Analyzer, Planner, Writer, Editor, Reviser) and the search tool.
 """
 
 from __future__ import annotations
@@ -11,7 +11,14 @@ from typing import Optional
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 from app.llm_config import get_llm
-from app.tasks import PLANNER_PROMPT, WRITER_PROMPT, EDITOR_PROMPT, ANALYZER_PROMPT
+from app.tasks import (
+    ANALYZER_PROMPT,
+    PLANNER_PROMPT, 
+    WRITER_PROMPT, 
+    EDITOR_PROMPT,
+    REVISER_PROMPT
+)
+
 
 def get_search_tool():
     """
@@ -51,11 +58,13 @@ def search_web(query: str) -> str:
     except Exception as e:
         return f"(Web search failed: {str(e)})"
 
+
 def build_analyzer_chain():
     """Build the prompt analyzer and router agent chain."""
     llm = get_llm()
-    # Sử dụng JsonOutputParser để bắt LLM trả về dict python
+    # Analyzer returns JSON dict to control logic
     return ANALYZER_PROMPT | llm | JsonOutputParser()
+
 
 def build_planner_chain():
     """Build the Content Planner agent chain."""
@@ -73,3 +82,9 @@ def build_editor_chain():
     """Build the Editor agent chain."""
     llm = get_llm()
     return EDITOR_PROMPT | llm | StrOutputParser()
+
+
+def build_reviser_chain():
+    """Build the Reviser agent chain to process user comments."""
+    llm = get_llm()
+    return REVISER_PROMPT | llm | StrOutputParser()
